@@ -3,7 +3,11 @@ package ro.pub.cs.systems.eim.practicaltest01var03;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,8 +16,51 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import ro.pub.cs.systems.eim.practicaltest01var03.service.PracticalTest01Var03Service;
+
 public class PracticalTest01Var03MainActivity extends AppCompatActivity {
-    public View.OnClickListener listener = new ButtonListener();;
+    public View.OnClickListener listener = new ButtonListener();
+
+    public void stopService() {
+        if (serviceStarted == 1) {
+            Intent intent = new Intent(this, PracticalTest01Var03Service.class);
+            stopService(intent);
+            serviceStarted = 0;
+        }
+    }
+
+    public class TestBroadcastReceiver extends BroadcastReceiver {
+        int recv = 0;
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // and set the text on the messageTextView
+
+            if (intent != null) {
+                String action = intent.getAction();
+                if (action.equals(Constants.ACTION_DIFF) || action.equals(Constants.ACTION_SUM) ) {
+                    String text = intent.getStringExtra(Constants.INTENT_KEY);
+                    Log.d(Constants.RECEIVER_TAG, "Result for "+ action +" is : " +  text);
+                    recv++;
+                }
+            }
+            if (recv == 2) {
+                stopService();
+            }
+
+        }
+    }
+    private TestBroadcastReceiver recv = null;
+    private IntentFilter filter = null;
+    private int serviceStarted = 0;
+
+    private void startService(String sum, String diff) {
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(this, PracticalTest01Var03Service.class));
+        intent.putExtra(Constants.INTENT_DIFF, diff);
+        intent.putExtra(Constants.INTENT_SUM, sum);
+        startService(intent);
+        serviceStarted = 1;
+    }
 
     private final int waitNr = 1;
     class ButtonListener implements View.OnClickListener {
@@ -46,6 +93,8 @@ public class PracticalTest01Var03MainActivity extends AppCompatActivity {
                 message = "" + n1 + " - " + n2 +" = " + result;
             }
             text.setText(message);
+
+            startService(""+(n1+n2), ""+(n1-n2));
         }
     }
 
@@ -59,6 +108,7 @@ public class PracticalTest01Var03MainActivity extends AppCompatActivity {
             startActivityForResult(intent, waitNr);
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,7 +132,26 @@ public class PracticalTest01Var03MainActivity extends AppCompatActivity {
             }
             Toast.makeText(PracticalTest01Var03MainActivity.this, msg, Toast.LENGTH_SHORT).show();
         }
+
+        if (recv == null) {
+            recv = new TestBroadcastReceiver();
+            filter = new IntentFilter();
+            filter.addAction(Constants.ACTION_DIFF);
+            filter.addAction(Constants.ACTION_SUM);
+        }
+        registerReceiver(recv, filter);
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (serviceStarted == 1) {
+            Intent intent = new Intent(this, PracticalTest01Var03Service.class);
+            stopService(intent);
+            serviceStarted = 0;
+        }
+    }
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -112,6 +181,16 @@ public class PracticalTest01Var03MainActivity extends AppCompatActivity {
             String mesg = "the activity exited with " + resultCode;
             Toast.makeText(this, mesg, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (serviceStarted == 1) {
+            Intent intent = new Intent(this, PracticalTest01Var03Service.class);
+            stopService(intent);
+            serviceStarted = 0;
+        }
+        super.onDestroy();
     }
 
 

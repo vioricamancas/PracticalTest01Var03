@@ -9,6 +9,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PracticalTest01Var03">
+        <service
+            android:name=".service.PracticalTest01Var03Service"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="ro.pub.cs.systems.eim.lab04.practicetest.service.PracticalTest01Var03Service" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
         <activity android:name=".PracticalTest01Var03SecondaryActivity">
             <intent-filter>
                 <action android:name="ro.pub.cs.systems.eim.practicaltest01var03.PracticalTest01Var03SecondaryActivity" />
